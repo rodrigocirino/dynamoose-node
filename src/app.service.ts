@@ -2,35 +2,20 @@
 /* eslint-disable prefer-const */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as dynamoose from 'dynamoose';
 import { AnyDocument } from 'dynamoose/dist/Document';
 import { ModelType } from 'dynamoose/dist/General';
 import { User } from './user';
 import { UserKey } from './user.interface';
+import { aws_config } from './aws.config';
 import * as operation from './user.model';
 
 @Injectable()
 export class AppService {
   constructor(private configService: ConfigService) {}
 
-  config() {
-    // Create new DynamoDB instance
-    const ddb = new dynamoose.aws.sdk.DynamoDB({
-      accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY_ID'),
-      secretAccessKey: this.configService.get<string>('AWS_SECRET_ACCESS_KEY'),
-      region: this.configService.get<string>('AWS_REGION'),
-    });
-
-    // Set DynamoDB instance to the Dynamoose DDB instance
-    dynamoose.aws.ddb.set(ddb);
-    //dynamoose.aws.ddb.local("http://localhost:1234");
-
-    return dynamoose;
-  }
-
   async main(): Promise<any> {
     //Set key values to AWS config
-    const dynamoose = this.config();
+    const dynamoose = aws_config(this.configService);
 
     //Create a schema to model
     const userSchema = new dynamoose.Schema(
