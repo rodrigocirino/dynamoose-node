@@ -7,6 +7,7 @@ import { AnyDocument } from 'dynamoose/dist/Document';
 import { ModelType } from 'dynamoose/dist/General';
 import { User } from './user';
 import { UserKey } from './user.interface';
+import * as operation from './user.model';
 
 @Injectable()
 export class AppService {
@@ -25,74 +26,6 @@ export class AppService {
     //dynamoose.aws.ddb.local("http://localhost:1234");
 
     return dynamoose;
-  }
-
-  async createOne(model: ModelType<AnyDocument>, val: any): Promise<AnyDocument> {
-    const userModelNew: AnyDocument = new model(val);
-    const document: AnyDocument = await userModelNew.save();
-    return document;
-  }
-
-  async updateOrCreateOne(model: ModelType<AnyDocument>, search: any, newValue: any) {
-    const document = await model.update(search, newValue);
-    return document;
-  }
-
-  async saveOne(model: AnyDocument): Promise<AnyDocument> {
-    const document: AnyDocument = await model.save();
-    return document;
-  }
-
-  async queryWhere(model: AnyDocument, key: string, val: string): Promise<AnyDocument> {
-    const document: any = await model.query(key).eq(val).exec();
-    return document['count'] ? document : undefined;
-  }
-
-  async findOne(model: AnyDocument, val: any): Promise<AnyDocument> {
-    const document: AnyDocument = await model.get(val);
-    return document;
-  }
-
-  async findByField(model: AnyDocument, obj: any): Promise<AnyDocument> {
-    console.log('Searching by ', obj);
-    const document: AnyDocument = await model.get({ user_email: 'r@ok.com' });
-    return document;
-  }
-
-  async deleteOne(model: AnyDocument, val: any): Promise<AnyDocument> {
-    const document = await this.findOne(model, val);
-    if (!document) {
-      console.log('No found to delete ', val);
-      return undefined;
-    }
-
-    //delete return void
-    await document.delete();
-    //check if register already exists
-    const founded = await this.findOne(model, val);
-    if (founded) {
-      throw Error(`Error document ${val} is not deleted.`);
-    } else {
-      console.log('Success to deleted register ', val);
-    }
-    return founded;
-  }
-
-  transform(document: AnyDocument, path = ''): UserKey {
-    if (!document) {
-      console.log(path + ': \t', 'No value found to transform.');
-      return undefined;
-    }
-    //Ok created or found
-    const parse: UserKey = new User({});
-    parse.gaId = document.ga_id;
-    parse.externalId = document.external_id;
-    parse.userEmail = document.user_email;
-    parse.createAt = document.create_at;
-    parse.updateAt = document.update_at;
-
-    console.log(path, parse);
-    return parse;
   }
 
   async main(): Promise<any> {
@@ -134,22 +67,22 @@ export class AppService {
     userData = new User({
       ga_id: 'UA-0',
     });
-    document = await this.findOne(userModel, userData);
-    response = this.transform(document, 'find one');
-    //console.log('RESPONSE: ', response.externalId);
+    document = await operation.findOne(userModel, userData);
+    response = operation.transform(document, 'find one');
+    console.log('findOne: ', response.gaId);
 
     // --------------- QUERY WHERE ---------------
     //Find some value, by default search by partition key
     userValue = 'UA-0';
     userKey = 'ga_id';
-    document = await this.queryWhere(userModel, userKey, userValue);
-    response = this.transform(document, 'query where');
+    document = await operation.queryWhere(userModel, userKey, userValue);
+    response = operation.transform(document, 'query where');
 
     // --------------- FIND ALL---------------
     //Find some value, by default search by partition key
     const scanner = await userModel.scan().exec();
     const scann: any = scanner['count'] ? scanner.toJSON() : undefined;
-    this.transform(scann, 'find all');
+    operation.transform(scann, 'find all');
 
     // ---------------  PUT ---------------
     //Create some value
@@ -158,8 +91,8 @@ export class AppService {
       external_id: '12345',
       user_email: 'r@ok.com',
     });
-    document = await this.createOne(userModel, userData);
-    this.transform(document, 'create one');
+    document = await operation.createOne(userModel, userData);
+    operation.transform(document, 'create one');
 
     // ---------------  UPDATE ---------------
     //Update some value
@@ -171,13 +104,13 @@ export class AppService {
       user_email: 'r@ok.co',
     };
     // se criar nao popula o campo createAt
-    const doc: any = await this.updateOrCreateOne(userModel, search, newValue);
-    this.transform(doc, 'update one');
+    const doc: any = await operation.updateOrCreateOne(userModel, search, newValue);
+    operation.transform(doc, 'update one');
 
     // --------------- DELETE ---------------
     //Delete some value
     /* userValue = 'UA-0';
-    document = await this.deleteOne(userModel, userValue); */
+    document = await operation.deleteOne(userModel, userValue); */
 
     return 'Ok';
   }
