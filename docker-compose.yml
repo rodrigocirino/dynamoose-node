@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+
+  dynamodb:
+    image:  amazon/dynamodb-local
+    container_name: dbdynamo
+    hostname: dynamodb
+    ports:
+      - ${DYNAMODB_PORT}:8000
+    restart: always
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ."
+   
+# Config in your dynamoose project
+# dynamoose.aws.ddb.local("http://localhost:${DYNAMODB_PORT}");
+#
+# Access with aws-cli
+# aws dynamodb list-tables --endpoint-url http://localhost:${DYNAMODB_PORT}
+  
